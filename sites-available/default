@@ -1,0 +1,89 @@
+upstream app {
+	server localhost:8081;
+	server localhost:8082;
+}
+
+server {
+	listen 80;
+	listen [::]:80;
+	server_name yuuarai.ddns.net;
+	return 301 https://$host$request_uri;
+}
+
+server {
+	listen 443 ssl default_server;
+	server_name yuuarai.ddns.net;
+	root /var/www/html;
+
+	ssl_certificate /etc/letsencrypt/live/yuuarai.ddns.net/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/yuuarai.ddns.net/privkey.pem;
+
+	location / {
+		index index.html;
+	}
+
+	location = /secondpage {
+		try_files /secondpage.html =404;
+	}
+
+	location = /music {
+		alias /var/www/music/;
+		try_files song.mp3 =404;
+	}
+
+	location = /info.php {
+		proxy_pass http://localhost:8080;
+	}
+
+	location /secondserver {
+		proxy_pass https://www.google.com;
+	}
+
+	location /redblue {
+		proxy_pass http://app;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header Host $host;
+	}
+
+	location ~* ^/images/.*\.jpg$ {
+		alias /var/www;
+		image_filter rotate 180;
+	}
+
+	location /image1 {
+		alias /var/www/images;
+		index image.jpg;
+		try_files /image.jpg =404;
+	}
+
+	location /image2 {
+		alias /var/www/images;
+		index image.png;
+		try_files /image.png =404;
+	}
+
+	location = /cpu {
+		try_files /cpu.html =404;
+	}
+}
+
+server {
+	listen 8081;
+	server_name yuuarai.ddns.net;
+	root /var/www/html;
+
+	location / {
+		try_files /blue.html =404;
+	}
+}
+
+server {
+	listen 8082;
+	server_name yuuarai.ddns.net;
+	root /var/www/html;
+
+	location / {
+		try_files /red.html =404;
+	}
+}
